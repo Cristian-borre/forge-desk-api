@@ -18,17 +18,19 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework_simplejwt import views as jwt_views
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
+from . import routers
 
 urlpatterns = [
+    # API Schema y Documentación
+    path('schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('swagger/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    
     path('admin/', admin.site.urls),
-    path('api/', include('core.urls')),
+    path('', include(routers)),
     
     # JWT Auth
-    path('api/auth/', jwt_views.TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/auth/refresh/', jwt_views.TokenRefreshView.as_view(), name='token_refresh'),
+    path('auth/', jwt_views.TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('auth/refresh/', jwt_views.TokenRefreshView.as_view(), name='token_refresh'),
 
-    # API Schema y Documentación
-    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 ]

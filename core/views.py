@@ -1,7 +1,7 @@
 from django.shortcuts import render
-from rest_framework import generics, viewsets
-from .models import Product, Quote, Customer
-from .serializers import ProductSerializer, QuoteSerializer, CustomerSerializer
+from rest_framework import viewsets, serializers
+from .models import Product, Quote, Customer, Order, Component
+from .serializers import ProductSerializer, QuoteSerializer, CustomerSerializer, ComponentSerializer, OrderSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.db.models import Max, F, Subquery, OuterRef
@@ -15,16 +15,19 @@ class ProductViewsets(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
-# Para manejar cotizaciones
-class QuoteListCreateView(generics.ListCreateAPIView):
-    queryset = Quote.objects.all()
-    serializer_class = QuoteSerializer
+# Para manejar componentes
+class ComponentViewSet(viewsets.ModelViewSet):
+    queryset = Component.objects.all()
+    serializer_class = ComponentSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
 # Para manejar clientes
 class CustomerViewSets(viewsets.ModelViewSet):
     serializer_class = CustomerSerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
+    swagger_tags = ['Customers']
 
     def get_queryset(self):
         queryset = Customer.objects.all()
@@ -42,3 +45,26 @@ class CustomerViewSets(viewsets.ModelViewSet):
         )
 
         return queryset
+    
+# Para manejar cotizaciones
+class QuoteViewSet(viewsets.ModelViewSet):
+    queryset = Quote.objects.all()
+    serializer_class = QuoteSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        if not instance.check_stock():
+            raise serializers.ValidationError("No hay stock suficiente para esta cotización.")
+
+# Para manejar pedidos
+class OrderViewSet(viewsets.ModelViewSet):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        instance.create_order()  # Descuenta componentes
